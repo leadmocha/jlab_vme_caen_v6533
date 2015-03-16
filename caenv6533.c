@@ -87,6 +87,15 @@ unsigned short caenv6533GetSTATUS(int board_addr)
   return *reg;
 }
 
+
+unsigned short caenv6533GetFWREL(int board_addr)
+{
+  unsigned short *reg;
+  caenBoardAddr(board_addr,0x005C,&reg);
+  return *reg;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Getters/setters for channel registers/parameters
 // Read Header file for documentation

@@ -44,6 +44,13 @@ unsigned short caenv6533GetIMAX(int board_addr);
 // 12..15       Reserved
 unsigned short caenv6533GetSTATUS(int board_addr);
 
+// Board redout of microcontroller firmware release
+// Bit          Meaning
+// -----        -------
+// [7:0]        Minor release number
+// [15:8]       Major release number
+unsigned short caenv6533GetFWREL(int board_addr);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Getters/setters for channel registers/parameters
