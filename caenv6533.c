@@ -179,7 +179,7 @@ float caenv6533GetSVMAX(int board_addr, short chan)
   return (*reg)*0.1;  // V
 }
 
-void caenv6533SetVMAX(int board_addr, short chan, float val)
+void caenv6533SetSVMAX(int board_addr, short chan, float val)
 {
   unsigned short *reg;
   unsigned short rval = val/0.1;  // V

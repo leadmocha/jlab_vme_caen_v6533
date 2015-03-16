@@ -107,7 +107,7 @@ void caenv6533SetTRIP_TIME(int board_addr, short chan, float val);
 // Channel Software Max Volage [0 : 4000] V (internal resolution: 0.1 V)
 // Read/Write
 float caenv6533GetSVMAX(int board_addr, short chan);
-void caenv6533SetSVMAX(int board_addr, short chan, short val);
+void caenv6533SetSVMAX(int board_addr, short chan, float val);
 
 // Channel Ramp Down rate [0 : 500] V/s (internal resolution: 1 V/s)
 // Read/Write
