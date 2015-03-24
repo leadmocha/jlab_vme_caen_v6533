@@ -26,7 +26,7 @@ HDRS			= $(SRC:.c=.h)
 OBJ			= $(SRC:.c=.o)
 
 ifeq ($(ARCH),Linux)
-all: echoarch $(LIBS) install install_hdrs
+all: echoarch $(LIBS) install
 else
 all: echoarch $(OBJ) copy
 endif
@@ -44,7 +44,7 @@ links: $(LIBS)
 	@ln -vsf $(PWD)/$< $(LINUXVME_LIB)/$<
 	@ln -vsf $(PWD)/$(<:%.a=%.so) $(LINUXVME_LIB)/$(<:%.a=%.so)
 
-install: $(LIBS)
+install: $(LIBS) install_hdrs
 	@cp -v $(PWD)/$< $(LINUXVME_LIB)/$<
 	@cp -v $(PWD)/$(<:%.a=%.so) $(LINUXVME_LIB)/$(<:%.a=%.so)
 install_hdrs: $(HDRS)

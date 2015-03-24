@@ -25,8 +25,8 @@
 // However, in A24 we only need the leading two digits i.e.
 // A32: 0x3210 0000
 // A24: 0x10 0000
-const int caenv6533_default_board_addr    = 0x100000;
-const int caenv6533_default_addr_mod      = 0x39; // 0x39 is for A24. 0x09 is for A32
+const int caenv6533_default_board_addr    = 0x32100000;
+const int caenv6533_default_addr_mod      = 0x39; // 0x39 is for A24. 0x9 is for A32
 const int ch_base_addr  = 0x80; // Channel base addr
 
 /*
@@ -34,20 +34,29 @@ const int ch_base_addr  = 0x80; // Channel base addr
  */
 int caenBusToLocalAdrs(int adrsSpace, char *busAdrs, char **pLocalAdrs)
 {
+  int stat;
 #ifdef VXWORKS
-  return sysBusToLocalAdrs(adrsSpace, busAdrs, pLocalAdrs);
+  stat = sysBusToLocalAdrs(adrsSpace, busAdrs, pLocalAdrs);
 #else
-  return vmeBusToLocalAdrs(adrsSpace, busAdrs, pLocalAdrs);
+  stat = vmeBusToLocalAdrs(adrsSpace, busAdrs, pLocalAdrs);
 #endif
+  /*if( stat != 0 ) {
+    printf("ERROR: caenBusToLocalAdrs res=%d. Details: ",stat);
+  } else {
+    printf("caenBusToLocalAdrs ");
+  }
+  printf("mod=0x%.8x, addr=0x%.8x, laddr=0x%.8x\n",adrsSpace,busAdrs,pLocalAdrs);
+  */
+  return stat;
 }
 
 /*
  * Set pointer to specified channel register
  */
-int caenChannelAddr(int board_addr, short chan, unsigned short offset,
+int caenChannelAddr(int board_addr, unsigned short chan, short offset,
     unsigned short **reg)
 {
-  caenBusToLocalAdrs(caenv6533_default_addr_mod,
+  return caenBusToLocalAdrs(caenv6533_default_addr_mod,
       (char *)(board_addr+(ch_base_addr*chan)+offset),
       (char **)reg);
 }
@@ -57,42 +66,79 @@ int caenChannelAddr(int board_addr, short chan, unsigned short offset,
  */
 int caenBoardAddr(int board_addr, unsigned short offset, unsigned short **reg)
 {
-  caenBusToLocalAdrs(caenv6533_default_addr_mod,
+  return caenBusToLocalAdrs(caenv6533_default_addr_mod,
       (char *)(board_addr+offset),
       (char **)reg);
+}
+
+/*
+ * Read a specified channel with specified offset
+ */
+void caenWriteChannel(int board_addr, unsigned short chan,
+    unsigned short offset, unsigned short val)
+{
+  unsigned short *reg;
+  caenChannelAddr(board_addr,chan,offset,&reg);
+#ifdef VXWORKS
+  *reg = val&0xFF;
+#else
+  vmeWrite16(reg,val);
+#endif
+}
+
+/*
+ * Read a specified channel with specified offset
+ */
+unsigned short caenReadChannel(int board_addr, unsigned short chan,
+    unsigned short offset)
+{
+  unsigned short *reg;
+  caenChannelAddr(board_addr,chan,offset,&reg);
+#ifdef VXWORKS
+  return *reg&0xFFFF;
+#else
+  return vmeRead16(reg);
+#endif
+}
+
+/*
+ * Read a value from the board.
+ * Ensure that value is read in proper order regardless of OS
+ */
+unsigned short caenReadBoard(int board_addr, unsigned short offset)
+{
+  unsigned short *reg;
+  caenBoardAddr(board_addr,offset,&reg);
+#ifdef VXWORKS
+  return *reg&0xFFFF;
+#else
+  return vmeRead16(reg);
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Getters for board registers
 // All board parameters are **READ ONLY**
 ///////////////////////////////////////////////////////////////////////////////
-unsigned short caenv6533GetVMAX(int board_addr)
+short caenv6533GetVMAX(int board_addr)
 {
-  unsigned short *reg;
-  caenBoardAddr(board_addr,0x0050,&reg);
-  return *reg; // V
+  return caenReadBoard(board_addr,0x50); // in V
 }
 
-unsigned short caenv6533GetIMAX(int board_addr)
+short caenv6533GetIMAX(int board_addr)
 {
-  unsigned short *reg;
-  caenBoardAddr(board_addr,0x0054,&reg);
-  return *reg; // uA
+  return caenReadBoard(board_addr,0x54); // in uA
 }
 
-unsigned short caenv6533GetSTATUS(int board_addr)
+short caenv6533GetSTATUS(int board_addr)
 {
-  unsigned short *reg;
-  caenBoardAddr(board_addr,0x0058,&reg);
-  return *reg;
+  return caenReadBoard(board_addr,0x58);
 }
 
 
-unsigned short caenv6533GetFWREL(int board_addr)
+short caenv6533GetFWREL(int board_addr)
 {
-  unsigned short *reg;
-  caenBoardAddr(board_addr,0x005C,&reg);
-  return *reg;
+  return caenReadBoard(board_addr,0x5C);
 }
 
 
@@ -103,175 +149,145 @@ unsigned short caenv6533GetFWREL(int board_addr)
 
 float caenv6533GetVSET(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0x80,&reg);
-  return (*reg)*0.1;  // V
+  return caenReadChannel(board_addr,chan,0x80)*0.1; // V
 }
 
 void caenv6533SetVSET(int board_addr, short chan, float val)
 {
-  unsigned short *reg;
-  unsigned short rval = val/0.1; // V
-  caenChannelAddr(board_addr,chan,0x80,&reg);
-  *reg=(rval)&0xffff;
+  caenWriteChannel(board_addr,chan,0x80,val/0.1); // V
 }
 
 float caenv6533GetISET(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0x84,&reg);
-  return (*reg)*0.05; // uA
+  return caenReadChannel(board_addr,chan,0x84)*0.05;  // uA
 }
 
 void caenv6533SetISET(int board_addr, short chan, float val)
 {
-  unsigned short *reg;
-  unsigned short rval = val/0.05;  // uA
-  caenChannelAddr(board_addr,chan,0x84,&reg);
-  *reg=(rval)&0xffff;
+  caenWriteChannel(board_addr,chan,0x84,val/0.05); // uA
 }
 
 float caenv6533GetVMON(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0x88,&reg);
-  return (*reg)*0.1;  // V
+  return caenReadChannel(board_addr,chan,0x88)*0.1; // V
 }
 
 float caenv6533GetImonH(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan, 0x90, &reg);
-  return (*reg)*0.05; // uA
+  return caenReadChannel(board_addr,chan, 0x90)*0.05; // uA
 }
 
-unsigned short caenv6533GetPW(int board_addr, short chan)
+short caenv6533GetPW(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan, 0x90, &reg);
-  return *reg;
+  return caenReadChannel(board_addr,chan, 0x90);
 }
 
-void caenv6533SetPW(int board_addr, short chan, unsigned short val)
+void caenv6533SetPW(int board_addr, short chan, short val)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan, 0x90, &reg);
-  *reg = val;
+  caenWriteChannel(board_addr,chan, 0x90, val);
 }
 
-unsigned short caenv6533GetCHSTATUS(int board_addr, short chan)
+short caenv6533GetCHSTATUS(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0x94,&reg);
-  return *reg;
+  return caenReadChannel(board_addr,chan,0x94);
 }
 
 float caenv6533GetTRIP_TIME(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0x98,&reg);
-  return (*reg)*0.1;  // s
+  return caenReadChannel(board_addr,chan,0x98)*0.1; // s
 }
 
 void caenv6533SetTRIP_TIME(int board_addr, short chan, float val)
 {
-  unsigned short *reg;
-  unsigned short rval = val/0.1;  // s
-  caenChannelAddr(board_addr,chan,0x98,&reg);
-  *reg=(rval)&0xffff; // s
+  caenWriteChannel(board_addr,chan,0x98,val/0.1); // s
 }
 
 float caenv6533GetSVMAX(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0x9C,&reg);
-  return (*reg)*0.1;  // V
+  return caenReadChannel(board_addr,chan,0x9C)*0.1; // V
 }
 
 void caenv6533SetSVMAX(int board_addr, short chan, float val)
 {
-  unsigned short *reg;
-  unsigned short rval = val/0.1;  // V
-  caenChannelAddr(board_addr,chan,0x9C,&reg);
-  *reg=(rval)&0xffff; // V
+  caenWriteChannel(board_addr,chan,0x9C,val/0.1); // V
 }
 
 
-unsigned short caenv6533GetRAMP_DOWN(int board_addr, short chan)
+short caenv6533GetRAMP_DOWN(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xA0,&reg);
-  return *reg;        // V/s
+  return caenReadChannel(board_addr,chan,0xA0); // V/s
 }
 
-void caenv6533SetRAMP_DOWN(int board_addr, short chan, unsigned short val)
+void caenv6533SetRAMP_DOWN(int board_addr, short chan, short val)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xA0,&reg);
-  *reg=(val)&0xffff; // V/s
+  caenWriteChannel(board_addr,chan,0xA0,val); // V/s
 }
 
-unsigned short caenv6533GetRAMP_UP(int board_addr, short chan)
+short caenv6533GetRAMP_UP(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xA4,&reg);
-  return *reg;        // V/s
+  return caenReadChannel(board_addr,chan,0xA4); // V/s
 }
 
-void caenv6533SetRAMP_UP(int board_addr, short chan, unsigned short val)
+void caenv6533SetRAMP_UP(int board_addr, short chan, short val)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xA4,&reg);
-  *reg=(val)&0xffff; // V/s
+  caenWriteChannel(board_addr,chan,0xA4,val); // V/s
 }
 
-unsigned short caenv6533GetPWDOWN(int board_addr, short chan)
+short caenv6533GetPWDOWN(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xA8,&reg);
-  return *reg;
+  return caenReadChannel(board_addr,chan,0xA8);
 }
 
-void caenv6533SetPWDOWN(int board_addr, short chan, unsigned short val)
+void caenv6533SetPWDOWN(int board_addr, short chan, short val)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xA8,&reg);
-  *reg=(val)&0xffff;
+  caenWriteChannel(board_addr,chan,0xA8,val);
 }
 
-unsigned short caenv6533GetPOLARITY(int board_addr, short chan)
+short caenv6533GetPOLARITY(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xAC,&reg);
-  return *reg;
+  return caenReadChannel(board_addr,chan,0xAC);
 }
 
 short caenv6533GetTEMPERATURE(int board_addr, short chan)
 {
-  short *reg;
-  caenChannelAddr(board_addr,chan,0xB0,(unsigned short **)&reg);
-  return *reg; // C
+  return caenReadChannel(board_addr,chan,0xB0); // C
 }
 
-unsigned short caenv6533GetIMON_RANGE(int board_addr, short chan)
+short caenv6533GetIMON_RANGE(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xB4,&reg);
-  return *reg;
+  return caenReadChannel(board_addr,chan,0xB4);
 }
 
-void caenv6533SetIMON_RANGE(int board_addr, short chan, unsigned short val)
+void caenv6533SetIMON_RANGE(int board_addr, short chan, short val)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xB4,&reg);
-  *reg=(val)&0xffff;
+  caenWriteChannel(board_addr,chan,0xB4,val);
 }
 
 
 float caenv6533GetImonL(int board_addr, short chan)
 {
-  unsigned short *reg;
-  caenChannelAddr(board_addr,chan,0xB8,&reg);
-  return (*reg*0.005); // uA
+  return caenReadChannel(board_addr,chan,0xB8)*0.005; // uA
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Getters for board configuration
+// All board configurations are **READ ONLY**
+///////////////////////////////////////////////////////////////////////////////
+
+short caenv6533GetCHNUM(int board_addr)
+{
+  return caenReadBoard(board_addr,0x8100);
+}
+
+
+void caenv6533GetDESCR(int board_addr, char *desc)
+{
+  unsigned int temp;
+  int i;
+  for(i = 0; i < 10; i++ ) {
+    temp = caenReadBoard(board_addr,0x8102 + (0x2*i));
+    desc[2*i] = temp & 0xFF;
+    desc[2*i+1] = temp >> 8;
+  }
 }
 

@@ -19,12 +19,12 @@ extern const int caenv6533_default_addr_mod;
 // This register can be used to read channel maximum allowed voltage. VMAX is a
 // hardware limit, set by the corresponding board front panel trimmer
 // [0 : 4100] V (internal resolution: 1 V)
-unsigned short caenv6533GetVMAX(int board_addr);
+short caenv6533GetVMAX(int board_addr);
 
 // This register can be used to read channel maximum allowed current IMAX is a
 // hardware limit, set by the corresponding board front panel trimmer.
 // [0 : 3100] uA (internal resolution: 1 uA)
-unsigned short caenv6533GetIMAX(int board_addr);
+short caenv6533GetIMAX(int board_addr);
 
 // Board Status in 16 bit register
 // STATUS bit   Meaning
@@ -42,14 +42,14 @@ unsigned short caenv6533GetIMAX(int board_addr);
 // 10           Board MAXV UNCALIBRATED
 // 11           Board MAXI UNCALIBRATED
 // 12..15       Reserved
-unsigned short caenv6533GetSTATUS(int board_addr);
+short caenv6533GetSTATUS(int board_addr);
 
 // Board redout of microcontroller firmware release
 // Bit          Meaning
 // -----        -------
 // [7:0]        Minor release number
 // [15:8]       Major release number
-unsigned short caenv6533GetFWREL(int board_addr);
+short caenv6533GetFWREL(int board_addr);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,8 +80,8 @@ float caenv6533GetImonH(int board_addr, short chan);
 // 0: OFF
 // 1: ON
 // Read/Write
-unsigned short caenv6533GetPW(int board_addr, short chan);
-void caenv6533SetPW(int board_addr, short chan, unsigned short val);
+short caenv6533GetPW(int board_addr, short chan);
+void caenv6533SetPW(int board_addr, short chan, short val);
 
 // Channel Status in 16 bit register
 // STATUS bit   Meaning
@@ -103,7 +103,7 @@ void caenv6533SetPW(int board_addr, short chan, unsigned short val);
 // 14..15       Reserved
 //
 // Read Only
-unsigned short caenv6533GetCHSTATUS(int board_addr, short chan);
+short caenv6533GetCHSTATUS(int board_addr, short chan);
 
 // Channel trip time [0 : 1000] s (internal resolution: 0.1 s)
 // Note: 1000 s = Infinite.
@@ -118,28 +118,28 @@ void caenv6533SetSVMAX(int board_addr, short chan, float val);
 
 // Channel Ramp Down rate [0 : 500] V/s (internal resolution: 1 V/s)
 // Read/Write
-unsigned short caenv6533GetRAMP_DOWN(int board_addr, short chan);
-void caenv6533SetRAMP_DOWN(int board_addr, short chan, unsigned short val);
+short caenv6533GetRAMP_DOWN(int board_addr, short chan);
+void caenv6533SetRAMP_DOWN(int board_addr, short chan, short val);
 
 // Channel Ramp Up rate [0 : 500] V/s (internal resolution: 1 V/s)
 // Read/Write
-unsigned short caenv6533GetRAMP_UP(int board_addr, short chan);
-void caenv6533SetRAMP_UP(int board_addr, short chan, unsigned short val);
+short caenv6533GetRAMP_UP(int board_addr, short chan);
+void caenv6533SetRAMP_UP(int board_addr, short chan, short val);
 
 // This is channel Power Down Mode control register.
 // Possible register values and meaning are:
 // 0: KILL
 // 1:RAMP
 // Read/Write
-unsigned short caenv6533GetPWDOWN(int board_addr, short chan);
-void caenv6533SetPWDOWN(int board_addr, short chan, unsigned short val);
+short caenv6533GetPWDOWN(int board_addr, short chan);
+void caenv6533SetPWDOWN(int board_addr, short chan, short val);
 
 // This register reads channel POLARITY.
 // Possible values are:
 // 0: NEGATIVE
 // 1: POSITIVE
 // Read only
-unsigned short caenv6533GetPOLARITY(int board_addr, short chan);
+short caenv6533GetPOLARITY(int board_addr, short chan);
 
 // Channel current temperature [-40 : +125] C (internal resolution: 1 C)
 // Read only
@@ -150,11 +150,23 @@ short caenv6533GetTEMPERATURE(int board_addr, short chan);  // C [-40 : +125]
 // 0: Range High
 // 1: Range Low
 // Read/Write
-unsigned short caenv6533GetIMON_RANGE(int board_addr, short chan);
-void caenv6533SetIMON_RANGE(int board_addr, short chan, unsigned short val);
+short caenv6533GetIMON_RANGE(int board_addr, short chan);
+void caenv6533SetIMON_RANGE(int board_addr, short chan, short val);
 
 // This register can be read to get channel current value
 // when IMON_RANGE is set “LOW” [0 : 300] uA (internal resolution: 0.005 uA)
 float caenv6533GetImonL(int board_addr, short chan);
+
+///////////////////////////////////////////////////////////////////////////////
+// Getters for board configuration
+// All board configurations are **READ ONLY**
+///////////////////////////////////////////////////////////////////////////////
+
+// Read number of channels
+short caenv6533GetCHNUM(int board_addr);
+
+// Read Board description in ASCII characters
+void caenv6533GetDESCR(int board_addr, char *desc);
+
 
 #endif // CAENV6533_H
