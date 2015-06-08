@@ -174,7 +174,7 @@ float caenv6533GetVMON(int board_addr, short chan)
 
 float caenv6533GetImonH(int board_addr, short chan)
 {
-  return caenReadChannel(board_addr,chan, 0x90)*0.05; // uA
+  return caenReadChannel(board_addr,chan, 0x8C)*0.05; // uA
 }
 
 short caenv6533GetPW(int board_addr, short chan)
